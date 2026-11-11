@@ -314,9 +314,13 @@ const looseNode = (n: Inline, reach: Reach): Inline | Inline[] => {
   return n.kind === 'code' ? looseCode(n, reach) : n
 }
 
+const webCode = (n: Extract<Inline, { kind: 'code' }>, reach: Reach): Inline =>
+  n.href === undefined && /^https?:\/\/\S+$/i.test(n.text) && isHyperlink(n.text, reach) && encodedLength(n.text) <= LINK_MAX ? { ...n, href: n.text } : n
+
 const linked = (node: Inline, reach: Reach): Inline => {
   const n: Inline = node.kind === 'image' && isWebLink(node.src) ? { kind: 'link', text: node.text, href: node.src } : node
   if (n.kind === 'link') return drawnLink(n, reach)
+  if (n.kind === 'code') return webCode(n, reach)
   if (n.kind === 'path') return drawnPath(n, reach)
   return 'children' in n ? { ...n, children: hyperlinks(n.children, reach) } : n
 }

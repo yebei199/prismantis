@@ -73,7 +73,10 @@ for (const [input, expected] of [
   ['见 https://e.org/x，再看', [{ kind: 'text', text: '见 ' }, { kind: 'link', text: 'https://e.org/x', href: 'https://e.org/x' }, { kind: 'text', text: '，再看' }]],
   ['（https://e.org/x）', [{ kind: 'text', text: '（' }, { kind: 'link', text: 'https://e.org/x', href: 'https://e.org/x' }, { kind: 'text', text: '）' }]],
   ['“https://e.org/x”', [{ kind: 'text', text: '“' }, { kind: 'link', text: 'https://e.org/x', href: 'https://e.org/x' }, { kind: 'text', text: '”' }]],
-  ['https://e.org/wiki/中文 ok', [{ kind: 'link', text: 'https://e.org/wiki/中文', href: 'https://e.org/wiki/中文' }, { kind: 'text', text: ' ok' }]],
+  ['打开https://e.org/x看看', [{ kind: 'text', text: '打开' }, { kind: 'link', text: 'https://e.org/x', href: 'https://e.org/x' }, { kind: 'text', text: '看看' }]],
+  ['https://e.org/x——下一句', [{ kind: 'link', text: 'https://e.org/x', href: 'https://e.org/x' }, { kind: 'text', text: '——下一句' }]],
+  ['https://e.org/x…', [{ kind: 'link', text: 'https://e.org/x', href: 'https://e.org/x' }, { kind: 'text', text: '…' }]],
+  ['<https://e.org/wiki/中文>。', [{ kind: 'link', text: 'https://e.org/wiki/中文', href: 'https://e.org/wiki/中文' }, { kind: 'text', text: '。' }]],
   ['[`render.tsx`](hooks/render.tsx)', [{ kind: 'link', text: 'render.tsx', href: 'hooks/render.tsx' }]],
   ['call f(*args, **kwargs) now', [{ kind: 'text', text: 'call f(*args, **kwargs) now' }]],
   ['**a *b* c**', [{ kind: 'strong', children: [{ kind: 'text', text: 'a ' }, { kind: 'emphasis', children: [{ kind: 'text', text: 'b' }] }, { kind: 'text', text: ' c' }] }]],
@@ -643,6 +646,15 @@ test('only http, https and file links become terminal hyperlinks', async ($, on)
   const links = (await ui.findAll({ type: 'Link' })).map(l => l.props.href)
   expect(links).toEqual(['https://example.com', 'http://localhost:3000', 'http://example.com', 'file:///etc/hosts.txt'])
   expect(await ui.find({ type: 'Text', text: /^run \(javascript:alert\(1\)\)$/ })).toBeDefined()
+  await ui.unmount()
+})
+
+test('inline code holding only a web URL links that URL, without the punctuation after it', async ($, on) => {
+  claudeAt(on, '2.1.289')
+  mock.env(on, {})
+  if (!(await linksHttp($.ui.mount(mount('[x](http://example.com)'))))) return
+  const ui = await $.ui.mount(mount('打开 `https://e.org/x`。再看 `https://e.org/y z` 和 `javascript:alert(1)`'))
+  expect((await ui.findAll({ type: 'Link' })).map(l => [l.props.label, l.props.href])).toEqual([['https://e.org/x', 'https://e.org/x']])
   await ui.unmount()
 })
 
